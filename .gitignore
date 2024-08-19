@@ -9,3 +9,4 @@ tests/behat/logs/*
 /vendor/
 **/.env
 core/app*
+core/cruddiy_135/
