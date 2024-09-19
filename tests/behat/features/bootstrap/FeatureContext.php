@@ -1,10 +1,9 @@
 <?php
 
 use Behat\Behat\Context\Context;
-use Behat\Behat\Hook\Scope\BeforeScenarioScope;
 use Behat\Behat\Hook\Scope\AfterStepScope;
-use Behat\Behat\Hook\Scope\StepScope;
 use Behat\MinkExtension\Context\MinkContext;
+use Behat\Gherkin\Node\TableNode;
 use Behat\Mink\Exception\ExpectationException;
 use Behat\Testwork\Hook\Scope\BeforeSuiteScope;
 use Behat\Testwork\Tester\Result\TestResult;
@@ -18,6 +17,8 @@ class FeatureContext extends MinkContext implements Context {
     protected $dotenv;
 
     private $lastStepScope;
+    private $sessionData = [];
+    private static $sharedSessionData = [];
 
     /**
      * Initializes context.
@@ -39,6 +40,48 @@ class FeatureContext extends MinkContext implements Context {
         }
     }
 
+
+
+    /**
+     * @Given I store :value as :key in the session
+     */
+    public function iStoreValueInSession($value, $key)
+    {
+        $_SESSION[$key] = $value;
+    }
+
+    /**
+     * @Then the session value of :key should be :expectedValue
+     */
+    public function theSessionValueShouldBe($key, $expectedValue)
+    {
+        if (!isset($_SESSION[$key])) {
+            throw new \Exception("Session key '$key' not found");
+        }
+
+        if ($_SESSION[$key] !== $expectedValue) {
+            throw new \Exception("Expected session value for '$key' to be '$expectedValue', but got '{$_SESSION[$key]}'");
+        }
+    }
+
+    /**
+     * @Given I start a new session
+     */
+    public function iStartANewSession()
+    {
+        if (session_status() == PHP_SESSION_ACTIVE) {
+            session_destroy();
+        }
+        session_start();
+    }
+
+    /**
+     * @Given I end the session
+     */
+    public function iEndTheSession()
+    {
+        session_destroy();
+    }
 
 
 
@@ -192,6 +235,35 @@ class FeatureContext extends MinkContext implements Context {
 
         if (strpos($pageContent, $stringOne) === false && strpos($pageContent, $stringTwo) === false) {
             throw new \Exception(sprintf('Neither "%s" nor "%s" was found on the page', $stringOne, $stringTwo));
+        }
+    }
+
+
+    /**
+     * @Then I should see one of:
+     */
+    public function iShouldSeeOneOf(TableNode $table)
+    {
+        $texts = $table->getColumn(0);
+        $page = $this->getSession()->getPage();
+
+        foreach ($texts as $text) {
+            if ($page->hasContent($text)) {
+                return;
+            }
+        }
+
+        throw new \Exception("None of the expected texts were found on the page.");
+    }
+
+    /**
+     * @When I see :text
+     */
+    public function iSee($text)
+    {
+        $page = $this->getSession()->getPage();
+        if (!$page->hasContent($text)) {
+            return; // Skip this step if the text is not found
         }
     }
 

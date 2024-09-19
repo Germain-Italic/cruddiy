@@ -2,7 +2,10 @@ Feature: Reset the installation
 
   @deconfigure
   Scenario: No existing credentials
-    Given I am on "/core/index.php"
+    Given I am on "/core/index.php?generator=new"
+    Then I should see "Generate a new app"
+
+    # Original scenario steps
     Then the "server" field should contain ""
     And the "database" field should contain ""
     And the "username" field should contain ""
